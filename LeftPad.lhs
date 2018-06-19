@@ -7,8 +7,12 @@
       }
   @-}
 leftPad :: Int -> a -> [a] -> [a]
-leftPad 0 _ xs = xs
-leftPad x n xs = x ::: leftPad x (n-1) xs
+leftPad n x xs = leftPad' k x xs
+  where k = max 0 (n - size xs)
+
+{-@ reflect leftPad' @-}
+leftPad' 0 n xs = xs
+leftPad' n x xs = x ::: leftPad (n-1) x xs
 
 {- Auxiliary: indexing -}
 {-@ reflect !! @-}
@@ -17,14 +21,21 @@ leftPad x n xs = x ::: leftPad x (n-1) xs
 (_:xs) !! n = xs !! (n-1)
 
 {- Proof that the elements are correct -}
-{-@ thmElt :: n:Int -> c:a -> xs:[a] -> i:{Nat | i < n}
+{-
+{-@ thmLeftPadA :: n:Int -> c:a -> xs:[a] -> i:{Nat | i < n} ->
+  @-}
+thmLeftPadA n c xs i =
+-}
+
+{-@ thmLeftPad :: n:Int -> c:a -> xs:[a] -> i:{Nat | i < n} ->
       { leftPad n c xs !! i == leftPadElt n c xs i }
   @-}
-thmElt = error "oops!"
+thmLeftPad n c xs i = ()
+  where k = max 0 (n - size xs)
 
 {-@ reflect leftPadElt @-}
 leftPadElt n c xs i
   | i < k = c
   | otherwise = xs !! (i-k)
-  where k = n - size xs
+  where k = max 0 (n - size xs)
 
