@@ -40,7 +40,7 @@ leftPad n x xs = leftPad' k x xs
       }
   @-}
 leftPad' :: Int -> a -> [a] -> [a]
-leftPad' 0 n xs = xs
+leftPad' 0 x xs = xs
 leftPad' n x xs = x : leftPad' (n-1) x xs
 
 {- Proof that the elements are correct -}
@@ -56,7 +56,7 @@ thmLeftPadA n x xs i = thmLeftPadA (n-1) x xs (i-1)
 
 {-@ thmLeftPadB ::
       n:Nat -> x:a -> xs:[a] ->
-      i:{Nat | i >= n} ->
+      i:{Nat | i >= n && i < n + size xs} ->
         { leftPad' n x xs !! i == xs !! (i-n) }
   @-}
 thmLeftPadB :: Int -> a -> [a] -> Int -> ()
