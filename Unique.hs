@@ -34,6 +34,14 @@ count x (y:ys)
   | x == y = 1 + count x ys
   | otherwise = count x ys
 
+{-@ reflect hd @-}
+{-@ hd :: xs:{[a] | size xs > 0} -> a @-}
+hd (x:xs) = x
+
+{-@ reflect tl @-}
+{-@ tl :: xs:{[a] | size xs > 0} -> [a] @-}
+tl (x:xs) = xs
+
 {-@ reflect unique @-}
 {-@ unique :: Eq a => inp:[a] -> out:[a] @-}
 unique :: Eq a => [a] -> [a]
@@ -54,42 +62,70 @@ thmElemCount x (y:ys) = thmElemCount x ys
 equal :: Eq a => a -> a -> Proof
 equal x y = trivial *** QED
 
-{-@ thmUniqueA ::
+{-@ thmUniqueNoDup ::
       xs:[a] ->
       {x:a | elem x xs} ->
       { count x (unique xs) == 1 }
   @-}
-thmUniqueA :: Eq a => [a] -> a -> Proof
-thmUniqueA (x:xs) y
+thmUniqueNoDup :: Eq a => [a] -> a -> Proof
+thmUniqueNoDup (x:xs) y
   | y `elem` xs =
       if x == y then
               count y (unique (x:xs))
           ==. count y (unique xs)
-          ==. 1 ? thmUniqueA xs y
+          ==. 1 ? thmUniqueNoDup xs y
           *** QED
       else
               count y (unique (x:xs))
           ==. count y (x:unique xs)
           ==. count y (unique xs)
-          ==. 1 ? thmUniqueA xs y
+          ==. 1 ? thmUniqueNoDup xs y
           *** QED
   | otherwise =
               count y (unique (x:xs))
           ==. 1 + count y (unique xs) ? equal x y
-          ==. 1 ? thmUniqueB xs y `seq` thmElemCount y (unique xs)
+          ==. 1 ? thmUniqueExistInv xs y `seq` thmElemCount y (unique xs)
           *** QED
 
-{-@ thmUniqueB ::
+{-@ thmUniqueExist ::
+      xs:[a] ->
+      {x:a | elem x (unique xs)} ->
+      { elem x xs }
+  @-}
+thmUniqueExist :: Eq a => [a] -> a -> Proof
+thmUniqueExist (x:xs) y
+  | y == x = trivial *** QED
+  | otherwise
+      =   elem y (x:xs)
+      ==. elem y xs
+      ==. True ? thmUniqueExist' xs y `seq` thmUniqueExist xs y
+      *** QED
+
+{-@ thmUniqueExist' ::
+      xs:{[a] | size xs > 0} ->
+      {x:a | elem x (unique xs) && x != hd xs} ->
+      { elem x (unique (tl xs)) }
+  @-}
+thmUniqueExist' :: Eq a => [a] -> a -> Proof
+thmUniqueExist' (x:xs) y
+  =   elem y (unique (tl (x:xs)))
+  ==. elem y (unique xs)
+  ==. elem y (x:unique xs)
+  ==. elem y (unique (x:xs))
+  ==. True
+  *** QED
+
+{-@ thmUniqueExistInv ::
       xs:[a] ->
       {x:a | not elem x xs} ->
       { not elem x (unique xs) }
   @-}
-thmUniqueB :: Eq a => [a] -> a -> Proof
-thmUniqueB [] y = trivial *** QED
-thmUniqueB (x:xs) y
+thmUniqueExistInv :: Eq a => [a] -> a -> Proof
+thmUniqueExistInv [] y = trivial *** QED
+thmUniqueExistInv (x:xs) y
   =   elem y (unique (x:xs))
   ==. elem y (x:unique xs)
   ==. elem y (unique xs)
-  ==. False ? thmUniqueB xs y
+  ==. False ? thmUniqueExistInv xs y
   *** QED
 
