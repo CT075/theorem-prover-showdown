@@ -7,17 +7,8 @@
 import Prelude hiding ((!!), length, elem)
 import Language.Haskell.Liquid.ProofCombinators
 
-{-@ absurd :: i:{Nat | i < 0} -> a @-}
-absurd :: Int -> a
-absurd _ = error "oops!"
-
-{-@ measure size @-}
-size :: [a] -> Int
-size [] = 0
-size (_:xs) = 1 + size xs
-
 {-@ reflect !! @-}
-{-@ (!!) :: xs:[a] -> i:{Nat | i < size xs} -> a @-}
+{-@ (!!) :: xs:[a] -> i:{Nat | i < len xs} -> a @-}
 (!!) :: [a] -> Int -> a
 (x:xs) !! 0 = x
 (x:xs) !! n = xs !! (n-1)
@@ -35,11 +26,11 @@ count x (y:ys)
   | otherwise = count x ys
 
 {-@ reflect hd @-}
-{-@ hd :: xs:{[a] | size xs > 0} -> a @-}
+{-@ hd :: xs:{[a] | len xs > 0} -> a @-}
 hd (x:xs) = x
 
 {-@ reflect tl @-}
-{-@ tl :: xs:{[a] | size xs > 0} -> [a] @-}
+{-@ tl :: xs:{[a] | len xs > 0} -> [a] @-}
 tl (x:xs) = xs
 
 {-@ reflect unique @-}
@@ -98,11 +89,11 @@ thmUniqueExist (x:xs) y
   | otherwise
       =   elem y (x:xs)
       ==. elem y xs
-      ==. True ? thmUniqueExist' xs y `seq` thmUniqueExist xs y
+      ==. True ? thmUniqueExist' (x:xs) y `seq` thmUniqueExist xs y
       *** QED
 
 {-@ thmUniqueExist' ::
-      xs:{[a] | size xs > 0} ->
+      xs:{[a] | len xs > 0} ->
       {x:a | elem x (unique xs) && x != hd xs} ->
       { elem x (unique (tl xs)) }
   @-}
