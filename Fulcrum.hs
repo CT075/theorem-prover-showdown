@@ -1,10 +1,11 @@
 {-@ LIQUID "--reflection"  @-}
 {-@ LIQUID "--ple"         @-}
-{-@ LIQUID "--no-totality" @-}
 {-@ LIQUID "--higherorder" @-}
 {-@ infixr !!              @-}
+{-@ infixr ++ @-}
 
-import Prelude hiding ((!!), length, min, minimum, elem, abs)
+import Prelude hiding
+  ((!!), (++), length, min, minimum, elem, abs, drop, take)
 import Language.Haskell.Liquid.ProofCombinators
 
 {-@ reflect !! @-}
@@ -12,6 +13,12 @@ import Language.Haskell.Liquid.ProofCombinators
 (!!) :: [a] -> Int -> a
 (x:_) !! 0 = x
 (_:xs) !! i = xs !! (i-1)
+
+{-@ reflect ++ @-}
+{-@ ++ :: xs:[a] -> ys:[a] -> r:{len r == len xs + len ys} @-}
+(++) :: [a] -> [a] -> [a]
+[] ++ l = l
+(x:xs) ++ l = x:(xs ++ l)
 
 {-@ abs :: Int -> Nat @-}
 abs :: Int -> Int
@@ -34,6 +41,36 @@ cons x xs = x:xs
 elem :: Eq a => a -> [a] -> Bool
 x `elem` [] = False
 x `elem` (y:ys) = x == y || x `elem` ys
+
+{-@ reflect take @-}
+{-@ take :: x:Nat -> xs:{[a] | len xs >= x} -> r:{[a] | len r == x} @-}
+take :: Int -> [a] -> [a]
+take 0 _ = []
+take i (x:xs) = x:take (i-1) xs
+
+{-@ reflect drop @-}
+{-@ drop ::
+      x:Nat -> xs:{[a] | len xs >= x} -> r:{[a] | len r == len xs - x}
+  @-}
+drop :: Int -> [a] -> [a]
+drop 0 l = l
+drop i (x:xs) = drop (i-1) xs
+
+{-@ thmTakeDrop ::
+      x:Nat -> xs:{[Int] | len xs >= x} -> {take x xs ++ drop x xs == xs}
+  @-}
+thmTakeDrop :: Int -> [Int] -> Proof
+thmTakeDrop 0 xs
+  =   take 0 xs ++ drop 0 xs
+  ==. [] ++ xs
+  ==. xs
+  *** QED
+thmTakeDrop i (x:xs)
+  =   take i (x:xs) ++ drop i (x:xs)
+  ==. (x:take (i-1) xs) ++ drop (i-1) xs
+  ==. x:(take (i-1) xs ++ drop (i-1) xs)
+  ==. x:xs ? thmTakeDrop (i-1) xs
+  *** QED
 
 {-@ reflect minimum @-}
 {-@ minimum :: xs:{[Int] | len xs > 0} -> x:{Int | elem x xs} @-}
@@ -58,13 +95,7 @@ thmMinimum (x:xs) y
 
   {-
 {-@ fulcrum :: xs:[Int] ->
-               i:{Nat | i < len xs && splits xs !! i == minimum (splits xs)}
+               i:{Nat | i < len xs && pivots xs !! i == minimum (pivots xs)}
   @-}
 fulcrum _ = error "not implemented!"
-
-splits l = splits' l (sum l)
-
-splits' [] t = []
-splits' (x:xs) t = t:splits' xs (abs (t - 2*x))
-
 -}
