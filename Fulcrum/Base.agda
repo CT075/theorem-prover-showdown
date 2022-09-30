@@ -1,12 +1,13 @@
 module Fulcrum.Base where
 
-open import Data.Vec as Vec using (Vec; _∷_; []; take; drop)
+open import Data.Vec as Vec using (Vec; _∷_; []; take; drop; zipWith; allFin)
 open import Data.List as List using (List; _∷_; [])
 open import Data.List.Extrema.Nat using (argmin)
 open import Data.Integer as Int hiding (_<_; suc)
 open import Data.Nat as Nat using (ℕ; zero; suc; _∸_)
 open import Data.Fin as Fin hiding (_+_; _-_; suc)
 open import Data.Fin.Properties using (toℕ-fromℕ; opposite-suc)
+open import Data.Product using (proj₁; proj₂; _,′_)
 
 sum : ∀{n : ℕ} → Vec ℤ n → ℤ
 sum [] = + 0
@@ -14,6 +15,9 @@ sum (x ∷ xs) = x + sum xs
 
 abs : ℤ → ℕ
 abs x = ∣ x ∣
+
+absDiff : ℤ → ℤ → ℕ
+absDiff x y = abs (x - y)
 
 -- We could use [allFin], but I think this way works better with [Extrema]
 enum : (n : ℕ) → List (Fin n)
@@ -31,7 +35,7 @@ dropFin {n = suc n} (Fin.suc i) (_ ∷ xs)
   rewrite (opposite-suc i) = dropFin i xs
 
 fv : ∀{n : ℕ} → Vec ℤ n → Fin n → ℕ
-fv {n} xs i = abs (sum (takeFin i xs) - sum (dropFin i xs))
+fv {n} xs i = absDiff (sum (takeFin i xs)) (sum (dropFin i xs))
 
 fulcrumSlow : ∀{n : ℕ} → Vec ℤ (suc n) → Fin (suc n)
 fulcrumSlow {n} xs = argmin (fv xs) zero (enum (suc n))
@@ -47,6 +51,18 @@ rightSums : ∀{n : ℕ} → Vec ℤ n → Vec ℤ n
 rightSums xs =
   let s = sum xs in
   Vec.map (λ x → s - x) (leftSums xs)
+
+fvs : ∀{n} → Vec ℤ n → Vec ℕ n
+fvs xs = zipWith absDiff (leftSums xs) (rightSums xs)
+
+indexMin : ∀{n} → Vec ℕ (suc n) → Fin (suc n)
+indexMin {n} xs =
+  proj₁ (argmin proj₂ ⊤ (Vec.toList (Vec.zip (allFin (suc n)) xs)))
+  where
+    ⊤ = Fin.zero ,′ Nat.zero
+
+fulcrum : ∀{n} → Vec ℤ (suc n) → Fin (suc n)
+fulcrum xs = indexMin (fvs xs)
 
 -- Oops! This is actually quadratic because of the [map] on the tail
 leftSumsSlow : ∀{n : ℕ} → Vec ℤ n → Vec ℤ n
