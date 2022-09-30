@@ -36,6 +36,18 @@ fv {n} xs i = abs (sum (takeFin i xs) - sum (dropFin i xs))
 fulcrumSlow : ∀{n : ℕ} → Vec ℤ (suc n) → Fin (suc n)
 fulcrumSlow {n} xs = argmin (fv xs) zero (enum (suc n))
 
+leftSumsImpl : ∀{n : ℕ} → ℤ → Vec ℤ n → Vec ℤ n
+leftSumsImpl acc [] = []
+leftSumsImpl acc (x ∷ xs) = acc ∷ leftSumsImpl (acc + x) xs
+
+leftSums : ∀{n : ℕ} → Vec ℤ n → Vec ℤ n
+leftSums = leftSumsImpl (+ 0)
+
+rightSums : ∀{n : ℕ} → Vec ℤ n → Vec ℤ n
+rightSums xs =
+  let s = sum xs in
+  Vec.map (λ x → s - x) (leftSums xs)
+
 -- Oops! This is actually quadratic because of the [map] on the tail
 leftSumsSlow : ∀{n : ℕ} → Vec ℤ n → Vec ℤ n
 leftSumsSlow [] = []
